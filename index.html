@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SamWeb 1.16</title>
+    <title>SamWeb 1.17</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
@@ -12,9 +12,11 @@
         #title {
             position: fixed;
             top: 20px;
-            left: 20px;
+            left: 0;
+            right: 0;
             color: white;
             font-size: 24px;
+            text-align: center;
         }
         #key {
             position: fixed;
@@ -24,6 +26,7 @@
             color: white;
             padding: 10px;
             border: 1px solid white;
+            font-size: 12px;
         }
         #versionInfo {
             position: fixed;
@@ -36,29 +39,33 @@
             position: fixed;
             bottom: 20px;
             left: 20px;
-            padding: 10px 20px;
-            background-color: rgba(255, 255, 255, 0.2);
+            width: 40px;
+            height: 40px;
+            background-color: black;
             color: white;
             border: 1px solid white;
+            border-radius: 50%;
             cursor: pointer;
             font-family: 'Times New Roman', serif;
             font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         #recenterButton:hover {
-            background-color: rgba(255, 255, 255, 0.3);
+            background-color: #333;
         }
     </style>
 </head>
 <body>
-    <div id="title">SamWeb Interactive Portfolio</div>
+    <div id="title">samsweb 1.17</div>
     <div id="key">
-        <h3>User Guide</h3>
         <p>🖱️ Drag: Rotate</p>
         <p>⚙️ Scroll: Zoom</p>
         <p>👆 Click node: Open project</p>
     </div>
-    <div id="versionInfo">v1.16</div>
-    <button id="recenterButton">Recenter</button>
+    <div id="versionInfo">v1.17</div>
+    <button id="recenterButton">R</button>
     <script>
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x000000);
@@ -110,7 +117,7 @@
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
             canvas.width = 128;
-            canvas.height = a64;
+            canvas.height = 64;
             context.fillStyle = 'white';
             context.font = 'bold 48px Arial';
             context.fillText(text, 0, 48);
@@ -145,13 +152,7 @@
         // Create nodes
         const nodes = [];
         const nodeGeometry = new THREE.SphereGeometry(0.2, 32, 32);
-        const colors = [
-            0xff0000, // Red - Project 1
-            0x00ff00, // Green - Project 2
-            0x0000ff, // Blue - Project 3
-            0xffff00, // Yellow - Project 4
-            0xff00ff  // Magenta - Project 5
-        ];
+        const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff];
 
         for (let i = 0; i < 5; i++) {
             const nodeMaterial = new THREE.MeshBasicMaterial({ color: colors[i] });
@@ -168,7 +169,7 @@
             // Add label
             const label = createTextSprite(`P${i+1}`);
             label.position.copy(node.position);
-            label.position.y += 0.3; // Position label above node
+            label.position.y += 0.3;
             label.scale.set(0.5, 0.5, 0.5);
             structure.add(label);
         }
@@ -261,11 +262,8 @@
         // Recenter button functionality
         const recenterButton = document.getElementById('recenterButton');
         recenterButton.addEventListener('click', () => {
-            // Reset camera position and rotation
             camera.position.set(10, 10, 10);
             camera.lookAt(0, 0, 0);
-            
-            // Reset structure rotation
             structure.rotation.set(0, 0, 0);
         });
     </script>
