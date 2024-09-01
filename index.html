@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SamWeb 1.17</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SamWeb 1.19</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
         body { margin: 0; overflow: hidden; font-family: 'Times New Roman', serif; }
-        canvas { display: block; }
+        canvas { display: block; touch-action: none; }
         #title {
             position: fixed;
             top: 20px;
@@ -51,6 +52,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            -webkit-tap-highlight-color: transparent;
         }
         #recenterButton:hover {
             background-color: #333;
@@ -58,13 +60,13 @@
     </style>
 </head>
 <body>
-    <div id="title">samsweb 1.17</div>
+    <div id="title">samsweb 1.19</div>
     <div id="key">
-        <p>🖱️ Drag: Rotate</p>
-        <p>⚙️ Scroll: Zoom</p>
-        <p>👆 Click node: Open project</p>
+        <p>🖱️/👆 Drag: Rotate</p>
+        <p>⚙️/🤏 Scroll/Pinch: Zoom</p>
+        <p>🖱️/👆 Click/Tap node: Open project</p>
     </div>
-    <div id="versionInfo">v1.17</div>
+    <div id="versionInfo">v1.19</div>
     <button id="recenterButton">R</button>
     <script>
         const scene = new THREE.Scene();
@@ -177,9 +179,10 @@
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
 
-        document.addEventListener('mousedown', () => isDragging = true);
-        document.addEventListener('mouseup', () => isDragging = false);
-        document.addEventListener('mousemove', (e) => {
+        // Mouse controls
+        renderer.domElement.addEventListener('mousedown', () => isDragging = true);
+        renderer.domElement.addEventListener('mouseup', () => isDragging = false);
+        renderer.domElement.addEventListener('mousemove', (e) => {
             if (isDragging) {
                 const deltaMove = {
                     x: e.offsetX - previousMousePosition.x,
@@ -195,40 +198,46 @@
 
         renderer.domElement.addEventListener('wheel', (e) => {
             e.preventDefault();
-
             const zoomSpeed = 0.001;
             const zoomFactor = 1 - e.deltaY * zoomSpeed;
-
-            const mouse = new THREE.Vector2(
-                (e.clientX / window.innerWidth) * 2 - 1,
-                -(e.clientY / window.innerHeight) * 2 + 1
-            );
-
-            const raycaster = new THREE.Raycaster();
-            raycaster.setFromCamera(mouse, camera);
-
-            const intersects = raycaster.intersectObjects(structure.children, true);
-
-            if (intersects.length > 0) {
-                const intersectionPoint = intersects[0].point;
-                const cameraPositionDelta = camera.position.clone().sub(intersectionPoint);
-                const newCameraPosition = intersectionPoint.clone().add(cameraPositionDelta.multiplyScalar(zoomFactor));
-                
-                camera.position.copy(newCameraPosition);
-            } else {
-                camera.position.multiplyScalar(zoomFactor);
-            }
-
+            camera.position.multiplyScalar(zoomFactor);
             camera.updateProjectionMatrix();
         }, { passive: false });
 
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
+        // Touch controls
+        const hammertime = new Hammer(renderer.domElement);
+        hammertime.get('pan').set({ direction: Hammer.DIRECTION_ALL });
+        hammertime.get('pinch').set({ enable: true });
 
-        document.addEventListener('click', (event) => {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        hammertime.on('panstart panmove', function(ev) {
+            if (ev.type === 'panstart') {
+                previousPanPosition = { x: 0, y: 0 };
+            }
+            const deltaMove = {
+                x: ev.deltaX - previousPanPosition.x,
+                y: ev.deltaY - previousPanPosition.y
+            };
+            const rotateSpeed = 0.002;
+            structure.rotation.y += deltaMove.x * rotateSpeed;
+            structure.rotation.x += deltaMove.y * rotateSpeed;
+            previousPanPosition = { x: ev.deltaX, y: ev.deltaY };
+        });
 
+        hammertime.on('pinch', function(ev) {
+            const zoomSpeed = 0.01;
+            const zoomFactor = 1 - (1 - ev.scale) * zoomSpeed;
+            camera.position.multiplyScalar(zoomFactor);
+            camera.updateProjectionMatrix();
+        });
+
+        // Unified click/tap handler
+        function handleInteraction(x, y) {
+            const mouse = new THREE.Vector2(
+                (x / window.innerWidth) * 2 - 1,
+                -(y / window.innerHeight) * 2 + 1
+            );
+
+            const raycaster = new THREE.Raycaster();
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(nodes);
 
@@ -238,6 +247,14 @@
                     window.open(`project${clickedNode.userData.id}.html`, '_blank');
                 }
             }
+        }
+
+        renderer.domElement.addEventListener('click', (event) => {
+            handleInteraction(event.clientX, event.clientY);
+        });
+
+        hammertime.on('tap', function(ev) {
+            handleInteraction(ev.center.x, ev.center.y);
         });
 
         window.addEventListener('resize', () => {
@@ -252,12 +269,6 @@
             renderer.render(scene, camera);
         }
         animate();
-
-        document.addEventListener('keydown', (e) => {
-            if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '0')) {
-                e.preventDefault();
-            }
-        });
 
         // Recenter button functionality
         const recenterButton = document.getElementById('recenterButton');
