@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SamWeb 1.20</title>
+    <title>SamWeb 1.19</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
     <style>
@@ -60,18 +60,18 @@
     </style>
 </head>
 <body>
-    <div id="title">samsweb 1.20</div>
+    <div id="title">samsweb 1.19</div>
     <div id="key">
         <p>🖱️/👆 Drag: Rotate</p>
         <p>⚙️/🤏 Scroll/Pinch: Zoom</p>
         <p>🖱️/👆 Click/Tap node: Open project</p>
     </div>
-    <div id="versionInfo">v1.20</div>
+    <div id="versionInfo">v1.19</div>
     <button id="recenterButton">R</button>
     <script>
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x000000);
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(10, 10, 10);
         camera.lookAt(0, 0, 0);
 
@@ -83,23 +83,73 @@
         const structure = new THREE.Group();
         scene.add(structure);
 
-        // Create infinite lines
-        const lineGeometry = new THREE.BufferGeometry();
-        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xFFFFFF });
+        // Create infinite white axes
+        const axisLength = 1000;
+        const axisColor = 0xFFFFFF;
 
-        const points = [];
-        const axisLength = 10000; // Very large number for "infinity"
+        const xAxis = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(-axisLength, 0, 0),
+                new THREE.Vector3(axisLength, 0, 0)
+            ]),
+            new THREE.LineBasicMaterial({ color: axisColor })
+        );
+        structure.add(xAxis);
 
-        points.push(new THREE.Vector3(-axisLength, 0, 0));
-        points.push(new THREE.Vector3(axisLength, 0, 0));
-        points.push(new THREE.Vector3(0, -axisLength, 0));
-        points.push(new THREE.Vector3(0, axisLength, 0));
-        points.push(new THREE.Vector3(0, 0, -axisLength));
-        points.push(new THREE.Vector3(0, 0, axisLength));
+        const yAxis = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, -axisLength, 0),
+                new THREE.Vector3(0, axisLength, 0)
+            ]),
+            new THREE.LineBasicMaterial({ color: axisColor })
+        );
+        structure.add(yAxis);
 
-        lineGeometry.setFromPoints(points);
-        const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
-        structure.add(lines);
+        const zAxis = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 0, -axisLength),
+                new THREE.Vector3(0, 0, axisLength)
+            ]),
+            new THREE.LineBasicMaterial({ color: axisColor })
+        );
+        structure.add(zAxis);
+
+        // Add axis labels
+        const addLabel = (text, position) => {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 128;
+            canvas.height = 64;
+            context.fillStyle = 'white';
+            context.font = 'bold 48px Arial';
+            context.fillText(text, 0, 48);
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.copy(position);
+            sprite.scale.set(1, 0.5, 1);
+            structure.add(sprite);
+        };
+
+        addLabel('X', new THREE.Vector3(10.5, 0, 0));
+        addLabel('Y', new THREE.Vector3(0, 10.5, 0));
+        addLabel('Z', new THREE.Vector3(0, 0, 10.5));
+
+        // Function to create text sprite
+        function createTextSprite(text) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 256;
+            canvas.height = 256;
+            context.font = "Bold 60px Arial";
+            context.fillStyle = "white";
+            context.textAlign = "center";
+            context.fillText(text, 128, 128);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+            return new THREE.Sprite(spriteMaterial);
+        }
 
         // Create nodes
         const nodes = [];
@@ -149,7 +199,7 @@
         renderer.domElement.addEventListener('wheel', (e) => {
             e.preventDefault();
             const zoomSpeed = 0.001;
-            const zoomFactor = 1 + e.deltaY * zoomSpeed; // Inverted zoom
+            const zoomFactor = 1 - e.deltaY * zoomSpeed;
             camera.position.multiplyScalar(zoomFactor);
             camera.updateProjectionMatrix();
         }, { passive: false });
@@ -175,8 +225,8 @@
 
         hammertime.on('pinch', function(ev) {
             const zoomSpeed = 0.01;
-            const zoomFactor = ev.scale; // Inverted zoom
-            camera.position.multiplyScalar(2 - zoomFactor);
+            const zoomFactor = 1 - (1 - ev.scale) * zoomSpeed;
+            camera.position.multiplyScalar(zoomFactor);
             camera.updateProjectionMatrix();
         });
 
@@ -227,22 +277,6 @@
             camera.lookAt(0, 0, 0);
             structure.rotation.set(0, 0, 0);
         });
-
-        // Function to create text sprite (kept for node labels)
-        function createTextSprite(text) {
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.width = 256;
-            canvas.height = 256;
-            context.font = "Bold 60px Arial";
-            context.fillStyle = "white";
-            context.textAlign = "center";
-            context.fillText(text, 128, 128);
-            
-            const texture = new THREE.CanvasTexture(canvas);
-            const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
-            return new THREE.Sprite(spriteMaterial);
-        }
     </script>
 </body>
 </html>
