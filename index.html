@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SamWeb 1.10</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
+        body { margin: 0; overflow: hidden; font-family: 'Times New Roman', serif; }
+        canvas { display: block; }
+        #title {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 24px;
+        }
+        #key {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            padding: 10px;
+            border: 1px solid white;
+        }
+        #versionInfo {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            color: white;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="title">SamWeb Interactive Portfolio</div>
+    <div id="key">
+        <h3>User Guide</h3>
+        <p>🖱️ Drag: Rotate</p>
+        <p>⚙️ Scroll: Zoom</p>
+        <p>👆 Click node: Open project</p>
+    </div>
+    <div id="versionInfo">v1.10</div>
+    <script>
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 20;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        const structure = new THREE.Group();
+        scene.add(structure);
+
+        const polyhedronGeometry = new THREE.IcosahedronGeometry(5, 2);
+        const polyhedronMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
+        const polyhedron = new THREE.LineSegments(new THREE.EdgesGeometry(polyhedronGeometry), polyhedronMaterial);
+        structure.add(polyhedron);
+
+        const nodes = [];
+        const nodeGeometry = new THREE.SphereGeometry(0.2, 32, 32);
+        const nodeMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+        for (let i = 0; i < 20; i++) {
+            const node = new THREE.Mesh(nodeGeometry, nodeMaterial);
+            node.position.set(
+                Math.random() * 10 - 5,
+                Math.random() * 10 - 5,
+                Math.random() * 10 - 5
+            );
+            node.userData = { isNode: true };
+            nodes.push(node);
+            structure.add(node);
+        }
+
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+
+        document.addEventListener('mousedown', () => isDragging = true);
+        document.addEventListener('mouseup', () => isDragging = false);
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const deltaMove = {
+                    x: e.offsetX - previousMousePosition.x,
+                    y: e.offsetY - previousMousePosition.y
+                };
+
+                const rotateSpeed = 0.005;
+                structure.rotation.y += deltaMove.x * rotateSpeed;
+                structure.rotation.x += deltaMove.y * rotateSpeed;
+            }
+            previousMousePosition = { x: e.offsetX, y: e.offsetY };
+        });
+
+        // Zoom towards mouse position
+        renderer.domElement.addEventListener('wheel', (e) => {
+            e.preventDefault();
+
+            const zoomSpeed = 0.001;
+            const zoomFactor = 1 - e.deltaY * zoomSpeed;
+
+            const mouse = new THREE.Vector2(
+                (e.clientX / window.innerWidth) * 2 - 1,
+                -(e.clientY / window.innerHeight) * 2 + 1
+            );
+
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObjects(structure.children, true);
+
+            if (intersects.length > 0) {
+                const intersectionPoint = intersects[0].point;
+                const cameraPositionDelta = camera.position.clone().sub(intersectionPoint);
+                const newCameraPosition = intersectionPoint.clone().add(cameraPositionDelta.multiplyScalar(zoomFactor));
+                
+                camera.position.copy(newCameraPosition);
+            } else {
+                camera.position.multiplyScalar(zoomFactor);
+            }
+
+            camera.updateProjectionMatrix();
+        }, { passive: false });
+
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        document.addEventListener('click', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(nodes);
+
+            if (intersects.length > 0) {
+                const clickedNode = intersects[0].object;
+                if (clickedNode.userData.isNode) {
+                    window.open('node.html', '_blank');
+                }
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Prevent browser zoom on key combinations
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '0')) {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>
