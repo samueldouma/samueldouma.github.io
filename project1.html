@@ -1,10 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SAMUEL DOUMA</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>Long Form Scrub Skim Player</title>
+    <link rel="stylesheet" href="../css/styles.css">
     <style>
         body {
             margin: 0;
@@ -14,136 +15,45 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
             overflow: hidden;
         }
-
-        h1 {
-            font-size: 3rem;
-            margin: 20px;
+        .project-content {
+            position: absolute;
+            top: 20px;
+            text-align: center;
+            z-index: 10;
+            width: 100%;
         }
-
-        .top-links {
-            margin-bottom: 20px;
+        .project-content h2 {
+            font-size: 1.5rem;
+            margin-bottom: 100px;
         }
-
-        .top-links a {
-            font-size: 1.2rem;
+        iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .back-link {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
             color: white;
             text-decoration: none;
-            margin: 0 15px;
+            font-size: 1rem;
+            z-index: 10;
             transition: color 0.3s ease;
         }
-
-        .top-links a:hover {
+        .back-link:hover {
             color: #888;
-        }
-
-        .circle {
-            position: absolute;
-            width: 150px;
-            height: 150px;
-            border: 2px solid white;
-            border-radius: 50%;
-            background-color: black;
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.2rem;
-            cursor: grab;
-        }
-
-        .circle:active {
-            cursor: grabbing;
         }
     </style>
 </head>
 <body>
-    <div class="top-links">
-        <a href="contact.html">Contact</a>
-        <a href="cv.html">CV</a>
-    </div>
-    <h1>SAMUEL DOUMA</h1>
-
-    <!-- Circles for Projects -->
-    <div id="container">
-        <div class="circle" style="left: 10%; top: 10%;">samsweb 1.0</div>
-        <div class="circle" style="left: 30%; top: 20%;">Long Form</div>
-        <div class="circle" style="left: 50%; top: 15%;">Oscilloscope</div>
-        <div class="circle" style="left: 70%; top: 25%;">Mirror</div>
-        <div class="circle" style="left: 20%; top: 35%;">Hand Tools</div>
-        <div class="circle" style="left: 40%; top: 30%;">Gesso and</div>
-        <div class="circle" style="left: 60%; top: 40%;">Floor Papers</div>
-        <div class="circle" style="left: 80%; top: 50%;">Aphorisms</div>
-    </div>
-
-    <script>
-        const circles = document.querySelectorAll('.circle');
-        const gravity = 0.5;
-        const friction = 0.9;
-        const containerHeight = window.innerHeight;
-        const containerWidth = window.innerWidth;
-
-        circles.forEach(circle => {
-            let dx = Math.random() * 4 - 2; // Random horizontal velocity
-            let dy = Math.random() * 4 - 2; // Random vertical velocity
-
-            const updatePosition = () => {
-                let rect = circle.getBoundingClientRect();
-
-                // Apply gravity
-                dy += gravity;
-
-                // Update position
-                let newTop = rect.top + dy;
-                let newLeft = rect.left + dx;
-
-                // Bounce off walls
-                if (newTop + rect.height > containerHeight) {
-                    newTop = containerHeight - rect.height;
-                    dy *= -friction; // Reverse and reduce speed
-                }
-                if (newTop < 0) {
-                    newTop = 0;
-                    dy *= -friction;
-                }
-                if (newLeft + rect.width > containerWidth) {
-                    newLeft = containerWidth - rect.width;
-                    dx *= -friction;
-                }
-                if (newLeft < 0) {
-                    newLeft = 0;
-                    dx *= -friction;
-                }
-
-                circle.style.top = `${newTop}px`;
-                circle.style.left = `${newLeft}px`;
-            };
-
-            const dragCircle = (e) => {
-                const offsetX = e.clientX - circle.offsetLeft;
-                const offsetY = e.clientY - circle.offsetTop;
-
-                const onMouseMove = (event) => {
-                    circle.style.left = `${event.clientX - offsetX}px`;
-                    circle.style.top = `${event.clientY - offsetY}px`;
-
-                    dx = (event.movementX) * 0.5; // Update velocity based on drag
-                    dy = (event.movementY) * 0.5;
-                };
-
-                document.addEventListener('mousemove', onMouseMove);
-
-                document.addEventListener('mouseup', () => {
-                    document.removeEventListener('mousemove', onMouseMove);
-                }, { once: true });
-            };
-
-            circle.addEventListener('mousedown', dragCircle);
-
-            setInterval(updatePosition, 16); // Update position every 16ms (~60fps)
-        });
-    </script>
-</body>
-</html>
-
+    <div class="project-content">
+        <h2>Long-Form Audio Player</h2>
+        <p>
