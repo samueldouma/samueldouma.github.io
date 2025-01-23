@@ -1,224 +1,282 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-  />
-  <title>samsweb_1.2</title>
-
-  <!-- Three.js (r128) CDN -->
-  <script
-    src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
-    integrity="sha512-nYTc42GXTBq/k7C4F8bEFT48eMNf9u+4LU+02GRN7xd00Q5Xvnq9d5R33rn1u9qZCxONCTBJVArdrt2enpCMTQ=="
-    crossorigin="anonymous"
-    referrerpolicy="no-referrer"
-  ></script>
-
-  <!-- Hammer.js (if you want gesture support; not used here, but left for completeness) -->
-  <script
-    src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"
-    integrity="sha512-3tXy08TAQZHgR4xIl9NDnEeJfricWbH3o7OVQb65E0gBNJ5HJxEKU8N4mcmQvYkPX/yXo6ZVAr0sx74CICFwdA=="
-    crossorigin="anonymous"
-    referrerpolicy="no-referrer"
-  ></script>
-
-  <style>
-    @import url("https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap");
-
-    body {
-      margin: 0;
-      overflow: hidden;
-      font-family: "Times New Roman", serif;
-      background-color: #000; /* So edges match the 3D scene background */
-    }
-
-    /* The canvas where Three.js will render */
-    canvas {
-      display: block;
-      touch-action: none;
-    }
-
-    /* Main title at the top */
-    #title {
-      position: fixed;
-      top: 20px;
-      left: 0;
-      right: 0;
-      color: white;
-      font-size: 24px;
-      text-align: center;
-      z-index: 9999;
-    }
-
-    /* Link container below the title */
-    #links {
-      position: fixed;
-      top: 60px;
-      left: 50%;
-      transform: translateX(-50%);
-      color: white;
-      font-size: 16px;
-      text-align: center;
-      z-index: 9999;
-    }
-    #links a {
-      color: white;
-      text-decoration: none;
-      margin: 0 15px;
-    }
-    #links a:hover {
-      text-decoration: underline;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SamWeb 1.19</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
+        body { margin: 0; overflow: hidden; font-family: 'Times New Roman', serif; }
+        canvas { display: block; touch-action: none; }
+        #title {
+            position: fixed;
+            top: 20px;
+            left: 0;
+            right: 0;
+            color: white;
+            font-size: 24px;
+            text-align: center;
+        }
+        #key {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            padding: 10px;
+            border: 1px solid white;
+            font-size: 12px;
+        }
+        #versionInfo {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            color: white;
+            font-size: 12px;
+        }
+        #recenterButton {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background-color: black;
+            color: white;
+            border: 1px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            font-family: 'Times New Roman', serif;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #recenterButton:hover {
+            background-color: #333;
+        }
+    </style>
 </head>
 <body>
-  <!-- Title and links -->
-  <div id="title">samsweb_1.2</div>
-  <div id="links">
-    <a href="cv.html" target="_blank">CV</a>
-    <a href="about.html" target="_blank">About</a>
-  </div>
+    <div id="title">samsweb 1.19</div>
+    <div id="key">
+        <p>🖱️/👆 Drag: Rotate</p>
+        <p>⚙️/🤏 Scroll/Pinch: Zoom</p>
+        <p>🖱️/👆 Click/Tap node: Open project</p>
+    </div>
+    <div id="versionInfo">v1.19</div>
+    <button id="recenterButton">R</button>
+    <script>
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(10, 10, 10);
+        camera.lookAt(0, 0, 0);
 
-  <script>
-    // Create the scene
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
 
-    // Setup the camera
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      1000
-    );
-    camera.position.set(10, 10, 10);
-    camera.lookAt(0, 0, 0);
+        const structure = new THREE.Group();
+        scene.add(structure);
 
-    // Setup the renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    document.body.appendChild(renderer.domElement);
+        // Create infinite white axes
+        const axisLength = 1000;
+        const axisColor = 0xFFFFFF;
 
-    // Create a parent group to hold everything
-    const structure = new THREE.Group();
-    scene.add(structure);
+        const xAxis = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(-axisLength, 0, 0),
+                new THREE.Vector3(axisLength, 0, 0)
+            ]),
+            new THREE.LineBasicMaterial({ color: axisColor })
+        );
+        structure.add(xAxis);
 
-    /**
-     * Creates a circular text sprite material using Canvas
-     * @param {string} text - Text to place on the ring
-     * @param {number} radius - Radius of the text circle
-     * @returns {THREE.SpriteMaterial} - Material for the text sprite
-     */
-    const createTextRing = (text, radius) => {
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d");
-      canvas.width = 512;
-      canvas.height = 512;
+        const yAxis = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, -axisLength, 0),
+                new THREE.Vector3(0, axisLength, 0)
+            ]),
+            new THREE.LineBasicMaterial({ color: axisColor })
+        );
+        structure.add(yAxis);
 
-      context.font = "bold 32px Times New Roman";
-      context.fillStyle = "white";
-      context.textAlign = "center";
-      context.textBaseline = "middle";
+        const zAxis = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 0, -axisLength),
+                new THREE.Vector3(0, 0, axisLength)
+            ]),
+            new THREE.LineBasicMaterial({ color: axisColor })
+        );
+        structure.add(zAxis);
 
-      /**
-       * Write each character around a circle
-       * @param {CanvasRenderingContext2D} ctx
-       * @param {string} text
-       * @param {number} radius
-       */
-      const circleText = (ctx, text, radius) => {
-        const chars = text.split("");
-        const anglePerChar = (Math.PI * 2) / chars.length;
-        for (let i = 0; i < chars.length; i++) {
-          const angle = anglePerChar * i - Math.PI / 2;
-          ctx.save();
-          ctx.translate(
-            canvas.width / 2 + Math.cos(angle) * radius,
-            canvas.height / 2 + Math.sin(angle) * radius
-          );
-          ctx.rotate(angle + Math.PI / 2);
-          ctx.fillText(chars[i], 0, 0);
-          ctx.restore();
+        // Add axis labels
+        const addLabel = (text, position) => {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 128;
+            canvas.height = 64;
+            context.fillStyle = 'white';
+            context.font = 'bold 48px Arial';
+            context.fillText(text, 0, 48);
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.copy(position);
+            sprite.scale.set(1, 0.5, 1);
+            structure.add(sprite);
+        };
+
+        addLabel('X', new THREE.Vector3(10.5, 0, 0));
+        addLabel('Y', new THREE.Vector3(0, 10.5, 0));
+        addLabel('Z', new THREE.Vector3(0, 0, 10.5));
+
+        // Function to create text sprite
+        function createTextSprite(text) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 256;
+            canvas.height = 256;
+            context.font = "Bold 60px Arial";
+            context.fillStyle = "white";
+            context.textAlign = "center";
+            context.fillText(text, 128, 128);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+            return new THREE.Sprite(spriteMaterial);
         }
-      };
 
-      circleText(context, text, radius);
+        // Create nodes
+        const nodes = [];
+        const nodeGeometry = new THREE.SphereGeometry(0.2, 32, 32);
+        const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff];
 
-      const texture = new THREE.CanvasTexture(canvas);
-      return new THREE.SpriteMaterial({ map: texture });
-    };
+        for (let i = 0; i < 5; i++) {
+            const nodeMaterial = new THREE.MeshBasicMaterial({ color: colors[i] });
+            const node = new THREE.Mesh(nodeGeometry, nodeMaterial);
+            node.position.set(
+                Math.random() * 8 - 4,
+                Math.random() * 8 - 4,
+                Math.random() * 8 - 4
+            );
+            node.userData = { isNode: true, id: i + 1 };
+            nodes.push(node);
+            structure.add(node);
 
-    /**
-     * Creates a sphere node and corresponding text sprite
-     * @param {string} title - The text to appear in circular form
-     * @param {THREE.Vector3} position - Position of the node
-     * @returns {THREE.Object3D} - A group containing the sphere & rotating text
-     */
-    const createNode = (title, position) => {
-      // Sphere geometry (node)
-      const nodeGeometry = new THREE.SphereGeometry(0.5, 32, 32);
-      const nodeMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-      const sphere = new THREE.Mesh(nodeGeometry, nodeMaterial);
+            // Add label
+            const label = createTextSprite(`P${i+1}`);
+            label.position.copy(node.position);
+            label.position.y += 0.3;
+            label.scale.set(0.5, 0.5, 0.5);
+            structure.add(label);
+        }
 
-      // Create group so sphere + text rotate together if desired
-      const nodeGroup = new THREE.Group();
-      nodeGroup.position.copy(position);
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
 
-      // Add sphere to group
-      nodeGroup.add(sphere);
+        // Mouse controls
+        renderer.domElement.addEventListener('mousedown', () => isDragging = true);
+        renderer.domElement.addEventListener('mouseup', () => isDragging = false);
+        renderer.domElement.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const deltaMove = {
+                    x: e.offsetX - previousMousePosition.x,
+                    y: e.offsetY - previousMousePosition.y
+                };
 
-      // Create text ring
-      const textMaterial = createTextRing(title, 100);
-      const textSprite = new THREE.Sprite(textMaterial);
-      textSprite.scale.set(2.5, 2.5, 2.5);
-      // Position text sprite so it appears centered on the node
-      textSprite.position.set(0, 0, 0);
-
-      // Add text sprite to group
-      nodeGroup.add(textSprite);
-
-      // Add node group to the main structure
-      structure.add(nodeGroup);
-      return nodeGroup;
-    };
-
-    // Create an array of node groups
-    const nodes = [
-      createNode("Audio Ergo Sum", new THREE.Vector3(-4, 4, 0)),
-      createNode("Gesso", new THREE.Vector3(4, 4, 0)),
-      createNode("Floor Papers", new THREE.Vector3(-4, -4, 0)),
-      createNode("Garage Sale", new THREE.Vector3(4, -4, 0))
-    ];
-
-    // Rotation speed
-    const rotateSpeed = 0.01;
-
-    // Animation loop
-    function animate() {
-      requestAnimationFrame(animate);
-
-      // Rotate each node group so text is continuously rotating
-      nodes.forEach((nodeGroup) => {
-        nodeGroup.children.forEach((child) => {
-          if (child.type === "Sprite") {
-            child.rotation.z += rotateSpeed;
-          }
+                const rotateSpeed = 0.005;
+                structure.rotation.y += deltaMove.x * rotateSpeed;
+                structure.rotation.x += deltaMove.y * rotateSpeed;
+            }
+            previousMousePosition = { x: e.offsetX, y: e.offsetY };
         });
-      });
 
-      renderer.render(scene, camera);
-    }
-    animate();
+        renderer.domElement.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomSpeed = 0.001;
+            const zoomFactor = 1 - e.deltaY * zoomSpeed;
+            camera.position.multiplyScalar(zoomFactor);
+            camera.updateProjectionMatrix();
+        }, { passive: false });
 
-    // Handle resizing
-    window.addEventListener("resize", () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-  </script>
+        // Touch controls
+        const hammertime = new Hammer(renderer.domElement);
+        hammertime.get('pan').set({ direction: Hammer.DIRECTION_ALL });
+        hammertime.get('pinch').set({ enable: true });
+
+        hammertime.on('panstart panmove', function(ev) {
+            if (ev.type === 'panstart') {
+                previousPanPosition = { x: 0, y: 0 };
+            }
+            const deltaMove = {
+                x: ev.deltaX - previousPanPosition.x,
+                y: ev.deltaY - previousPanPosition.y
+            };
+            const rotateSpeed = 0.002;
+            structure.rotation.y += deltaMove.x * rotateSpeed;
+            structure.rotation.x += deltaMove.y * rotateSpeed;
+            previousPanPosition = { x: ev.deltaX, y: ev.deltaY };
+        });
+
+        hammertime.on('pinch', function(ev) {
+            const zoomSpeed = 0.01;
+            const zoomFactor = 1 - (1 - ev.scale) * zoomSpeed;
+            camera.position.multiplyScalar(zoomFactor);
+            camera.updateProjectionMatrix();
+        });
+
+        // Unified click/tap handler
+        function handleInteraction(x, y) {
+            const mouse = new THREE.Vector2(
+                (x / window.innerWidth) * 2 - 1,
+                -(y / window.innerHeight) * 2 + 1
+            );
+
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(nodes);
+
+            if (intersects.length > 0) {
+                const clickedNode = intersects[0].object;
+                if (clickedNode.userData.isNode) {
+                    window.open(`project${clickedNode.userData.id}.html`, '_blank');
+                }
+            }
+        }
+
+        renderer.domElement.addEventListener('click', (event) => {
+            handleInteraction(event.clientX, event.clientY);
+        });
+
+        hammertime.on('tap', function(ev) {
+            handleInteraction(ev.center.x, ev.center.y);
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Recenter button functionality
+        const recenterButton = document.getElementById('recenterButton');
+        recenterButton.addEventListener('click', () => {
+            camera.position.set(10, 10, 10);
+            camera.lookAt(0, 0, 0);
+            structure.rotation.set(0, 0, 0);
+        });
+    </script>
 </body>
 </html>
