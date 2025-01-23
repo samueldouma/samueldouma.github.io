@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  />
+  <title>samsweb_1.2</title>
+
+  <!-- Three.js (r128) CDN -->
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+    integrity="sha512-nYTc42GXTBq/k7C4F8bEFT48eMNf9u+4LU+02GRN7xd00Q5Xvnq9d5R33rn1u9qZCxONCTBJVArdrt2enpCMTQ=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  ></script>
+
+  <!-- Hammer.js (if you want gesture support; not used here, but left for completeness) -->
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"
+    integrity="sha512-3tXy08TAQZHgR4xIl9NDnEeJfricWbH3o7OVQb65E0gBNJ5HJxEKU8N4mcmQvYkPX/yXo6ZVAr0sx74CICFwdA=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  ></script>
+
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap");
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: "Times New Roman", serif;
+      background-color: #000; /* So edges match the 3D scene background */
+    }
+
+    /* The canvas where Three.js will render */
+    canvas {
+      display: block;
+      touch-action: none;
+    }
+
+    /* Main title at the top */
+    #title {
+      position: fixed;
+      top: 20px;
+      left: 0;
+      right: 0;
+      color: white;
+      font-size: 24px;
+      text-align: center;
+      z-index: 9999;
+    }
+
+    /* Link container below the title */
+    #links {
+      position: fixed;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-size: 16px;
+      text-align: center;
+      z-index: 9999;
+    }
+    #links a {
+      color: white;
+      text-decoration: none;
+      margin: 0 15px;
+    }
+    #links a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <!-- Title and links -->
+  <div id="title">samsweb_1.2</div>
+  <div id="links">
+    <a href="cv.html" target="_blank">CV</a>
+    <a href="about.html" target="_blank">About</a>
+  </div>
+
+  <script>
+    // Create the scene
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);
+
+    // Setup the camera
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000
+    );
+    camera.position.set(10, 10, 10);
+    camera.lookAt(0, 0, 0);
+
+    // Setup the renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.body.appendChild(renderer.domElement);
+
+    // Create a parent group to hold everything
+    const structure = new THREE.Group();
+    scene.add(structure);
+
+    /**
+     * Creates a circular text sprite material using Canvas
+     * @param {string} text - Text to place on the ring
+     * @param {number} radius - Radius of the text circle
+     * @returns {THREE.SpriteMaterial} - Material for the text sprite
+     */
+    const createTextRing = (text, radius) => {
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      canvas.width = 512;
+      canvas.height = 512;
+
+      context.font = "bold 32px Times New Roman";
+      context.fillStyle = "white";
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+
+      /**
+       * Write each character around a circle
+       * @param {CanvasRenderingContext2D} ctx
+       * @param {string} text
+       * @param {number} radius
+       */
+      const circleText = (ctx, text, radius) => {
+        const chars = text.split("");
+        const anglePerChar = (Math.PI * 2) / chars.length;
+        for (let i = 0; i < chars.length; i++) {
+          const angle = anglePerChar * i - Math.PI / 2;
+          ctx.save();
+          ctx.translate(
+            canvas.width / 2 + Math.cos(angle) * radius,
+            canvas.height / 2 + Math.sin(angle) * radius
+          );
+          ctx.rotate(angle + Math.PI / 2);
+          ctx.fillText(chars[i], 0, 0);
+          ctx.restore();
+        }
+      };
+
+      circleText(context, text, radius);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      return new THREE.SpriteMaterial({ map: texture });
+    };
+
+    /**
+     * Creates a sphere node and corresponding text sprite
+     * @param {string} title - The text to appear in circular form
+     * @param {THREE.Vector3} position - Position of the node
+     * @returns {THREE.Object3D} - A group containing the sphere & rotating text
+     */
+    const createNode = (title, position) => {
+      // Sphere geometry (node)
+      const nodeGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+      const nodeMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const sphere = new THREE.Mesh(nodeGeometry, nodeMaterial);
+
+      // Create group so sphere + text rotate together if desired
+      const nodeGroup = new THREE.Group();
+      nodeGroup.position.copy(position);
+
+      // Add sphere to group
+      nodeGroup.add(sphere);
+
+      // Create text ring
+      const textMaterial = createTextRing(title, 100);
+      const textSprite = new THREE.Sprite(textMaterial);
+      textSprite.scale.set(2.5, 2.5, 2.5);
+      // Position text sprite so it appears centered on the node
+      textSprite.position.set(0, 0, 0);
+
+      // Add text sprite to group
+      nodeGroup.add(textSprite);
+
+      // Add node group to the main structure
+      structure.add(nodeGroup);
+      return nodeGroup;
+    };
+
+    // Create an array of node groups
+    const nodes = [
+      createNode("Audio Ergo Sum", new THREE.Vector3(-4, 4, 0)),
+      createNode("Gesso", new THREE.Vector3(4, 4, 0)),
+      createNode("Floor Papers", new THREE.Vector3(-4, -4, 0)),
+      createNode("Garage Sale", new THREE.Vector3(4, -4, 0))
+    ];
+
+    // Rotation speed
+    const rotateSpeed = 0.01;
+
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Rotate each node group so text is continuously rotating
+      nodes.forEach((nodeGroup) => {
+        nodeGroup.children.forEach((child) => {
+          if (child.type === "Sprite") {
+            child.rotation.z += rotateSpeed;
+          }
+        });
+      });
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Handle resizing
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
